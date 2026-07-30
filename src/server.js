@@ -42,8 +42,10 @@ app.get('*', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
+  console.error(`[Error] ${err.message}`);
+  res.status(err.status || 500).json({ 
+    error: err.message || 'Internal Server Error' 
+  });
 });
 
 // Initialize DB and Start Server

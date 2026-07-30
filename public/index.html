@@ -2,26 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Enterprise CRM</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="auth-container">
-    <div class="login-box">
-      <h1>Enterprise CRM</h1>
-      <form id="login-form">
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="email" value="admin@crm.com" required>
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="password" value="admin123" required>
-        </div>
-        <button type="submit" class="btn-primary">Sign In</button>
-        <div id="login-error" class="error-msg">Invalid credentials</div>
-      </form>
-    </div>
+<body class="bg-slate-900 flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-md p-8 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 backdrop-blur-md">
+    <h1 class="text-3xl font-bold text-white mb-6 text-center tracking-tight">Enterprise CRM</h1>
+    <form id="login-form" class="space-y-5">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-1">Email</label>
+        <input type="email" id="email" value="admin@crm.com" required 
+          class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+        <input type="password" id="password" value="admin123" required 
+          class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+      </div>
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors">Sign In</button>
+      <div id="login-error" class="hidden mt-4 p-3 bg-red-900/50 border border-red-500 text-red-200 rounded-lg text-sm text-center">Invalid credentials</div>
+    </form>
   </div>
   <script>
     document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -40,9 +41,9 @@
           const data = await res.json();
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
-          window.location.href = '/dashboard';
+          window.location.href = '/dashboard.html'; // Or dashboard if rewrite exists
         } else {
-          document.getElementById('login-error').style.display = 'block';
+          document.getElementById('login-error').classList.remove('hidden');
         }
       } catch (err) {
         console.error(err);

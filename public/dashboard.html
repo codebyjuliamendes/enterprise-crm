@@ -1,89 +1,144 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <title>Dashboard - Enterprise CRM</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .view-section {
+        @apply hidden;
+      }
+      .view-section.active {
+        @apply block;
+      }
+      .nav-links li {
+        @apply px-4 py-2 rounded-lg cursor-pointer text-slate-300 hover:bg-slate-700 transition-colors mb-1;
+      }
+      .nav-links li.active {
+        @apply bg-blue-600 text-white font-medium;
+      }
+    }
+  </style>
 </head>
-<body>
-  <div class="dashboard">
-    <aside class="sidebar">
-      <div class="sidebar-header">CRM ERP</div>
-      <ul class="nav-links">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col md:flex-row transition-colors duration-200">
+  <aside class="w-full md:w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col min-h-screen shrink-0">
+    <div class="p-6">
+      <div class="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400 mb-8">CRM ERP</div>
+      <ul class="nav-links space-y-1">
         <li class="active" data-target="overview">Overview</li>
         <li data-target="contacts">Contacts</li>
         <li data-target="deals">Pipeline</li>
         <li data-target="audit" data-role-restricted="true" data-roles="admin">Audit Logs</li>
       </ul>
-      <div style="margin-top: auto; padding: 1rem;">
-        <button id="theme-toggle" class="btn-primary" style="background:var(--surface); color:var(--text); border:1px solid var(--border)">Toggle Theme</button>
-        <button id="logout-btn" class="btn-primary" style="margin-top:0.5rem; background:var(--danger)">Logout</button>
-      </div>
-    </aside>
+    </div>
+    <div class="mt-auto p-4 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-2">
+      <button id="theme-toggle" class="w-full px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors font-medium text-sm">Toggle Theme</button>
+      <button id="logout-btn" class="w-full px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg transition-colors font-medium text-sm">Logout</button>
+    </div>
+  </aside>
 
-    <main class="main-content">
-      <div class="header-bar">
-        <h2>Dashboard</h2>
-        <div id="user-info">Logged in as: <span>...</span></div>
-      </div>
+  <main class="flex-1 p-8 overflow-y-auto">
+    <div class="flex justify-between items-center mb-8 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+      <h2 class="text-2xl font-bold">Dashboard</h2>
+      <div id="user-info" class="text-sm font-medium bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-full">Logged in as: <span class="text-blue-600 dark:text-blue-400">...</span></div>
+    </div>
 
-      <!-- Overview Section -->
-      <section id="overview" class="view-section active">
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-title">Total Contacts</div>
-            <div class="kpi-value" id="kpi-contacts">0</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-title">Active Deals</div>
-            <div class="kpi-value" id="kpi-deals">0</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-title">Won Revenue</div>
-            <div class="kpi-value" id="kpi-revenue">$0</div>
-          </div>
+    <!-- Overview Section -->
+    <section id="overview" class="view-section active">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Total Contacts</div>
+          <div class="text-3xl font-bold" id="kpi-contacts">0</div>
         </div>
-      </section>
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Active Deals</div>
+          <div class="text-3xl font-bold" id="kpi-deals">0</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Won Revenue</div>
+          <div class="text-3xl font-bold text-green-600 dark:text-green-400" id="kpi-revenue">$0</div>
+        </div>
+      </div>
+    </section>
 
-      <!-- Contacts Section -->
-      <section id="contacts" class="view-section">
-        <h3>Contacts</h3>
-        <div class="table-container" style="margin-top:1rem;">
-          <table id="contacts-table">
-            <thead>
-              <tr><th>Name</th><th>Email</th><th>Phone</th></tr>
+    <!-- Contacts Section -->
+    <section id="contacts" class="view-section">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+          <h3 class="text-xl font-bold">Contacts</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table id="contacts-table" class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
+              <tr>
+                <th class="px-6 py-4 font-medium">Name</th>
+                <th class="px-6 py-4 font-medium">Email</th>
+                <th class="px-6 py-4 font-medium">Phone</th>
+              </tr>
             </thead>
-            <tbody></tbody>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
           </table>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- Deals Section -->
-      <section id="deals" class="view-section">
-        <h3>Pipeline</h3>
-        <div class="kanban" id="kanban-board" style="margin-top:1rem;">
-          <div class="kanban-col" data-stage="Lead"><h3>Lead</h3><div class="kanban-items"></div></div>
-          <div class="kanban-col" data-stage="Qualified"><h3>Qualified</h3><div class="kanban-items"></div></div>
-          <div class="kanban-col" data-stage="Proposal"><h3>Proposal</h3><div class="kanban-items"></div></div>
-          <div class="kanban-col" data-stage="Won"><h3>Won</h3><div class="kanban-items"></div></div>
-          <div class="kanban-col" data-stage="Lost"><h3>Lost</h3><div class="kanban-items"></div></div>
+    <!-- Deals Section -->
+    <section id="deals" class="view-section">
+      <h3 class="text-xl font-bold mb-6">Pipeline</h3>
+      <div class="flex gap-4 overflow-x-auto pb-4" id="kanban-board">
+        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Lead">
+          <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center justify-between">Lead</h3>
+          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
         </div>
-      </section>
+        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Qualified">
+          <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-4">Qualified</h3>
+          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
+        </div>
+        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Proposal">
+          <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-4">Proposal</h3>
+          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
+        </div>
+        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Won">
+          <h3 class="font-semibold text-green-600 dark:text-green-400 mb-4">Won</h3>
+          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
+        </div>
+        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Lost">
+          <h3 class="font-semibold text-red-600 dark:text-red-400 mb-4">Lost</h3>
+          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
+        </div>
+      </div>
+    </section>
 
-      <!-- Audit Logs Section -->
-      <section id="audit" class="view-section">
-        <h3>Security Audit Logs</h3>
-        <div class="table-container" style="margin-top:1rem;">
-          <table id="audit-table">
-            <thead>
-              <tr><th>Date</th><th>User</th><th>Action</th><th>Entity</th><th>ID</th></tr>
+    <!-- Audit Logs Section -->
+    <section id="audit" class="view-section">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+          <h3 class="text-xl font-bold">Security Audit Logs</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table id="audit-table" class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
+              <tr>
+                <th class="px-6 py-4 font-medium">Date</th>
+                <th class="px-6 py-4 font-medium">User</th>
+                <th class="px-6 py-4 font-medium">Action</th>
+                <th class="px-6 py-4 font-medium">Entity</th>
+                <th class="px-6 py-4 font-medium">ID</th>
+              </tr>
             </thead>
-            <tbody></tbody>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700 font-mono text-xs"></tbody>
           </table>
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+  </main>
+
   <script src="/js/app.js"></script>
 </body>
 </html>

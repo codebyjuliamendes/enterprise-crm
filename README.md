@@ -1,60 +1,61 @@
-# Enterprise-Ready Mini CRM/ERP
+# Enterprise CRM
 
-## The Why
-This project demonstrates an enterprise-grade Mini CRM/ERP system with multi-layer security, robust Role-Based Access Control (RBAC), ACID-compliant database operations, and an append-only audit trail necessary for regulatory conformance like SOC2 and GDPR. It serves as a blueprint for building scalable, secure, and maintainable internal tools.
+![NodeJS](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
 
-## Architecture Diagram
+A robust, enterprise-grade Customer Relationship Management (CRM) built with an unyielding focus on Clean Architecture, ACID-compliant transactions, and a beautiful Tailwind CSS design system.
 
-\`\`\`mermaid
+---
+
+## 🏗️ Architecture
+
+```mermaid
 graph TD
-    Client[Web Client Vanilla JS] -->|HTTPS Requests| Router[Express Router]
-    Router --> AuthMiddleware{JWT Auth & RBAC}
-    AuthMiddleware -->|Approved| Controllers[Controllers]
-    AuthMiddleware -->|Rejected| 403[403 Forbidden]
-    Controllers --> Services[Transaction Manager]
-    Controllers --> Audit[Audit Logger Middleware]
-    Services --> DB[(SQLite - WAL Mode)]
-    Audit --> DB
-\`\`\`
+    Client[Client Browser / Tailwind CSS]
+    Router[Express Router]
+    Auth[Auth Middleware]
+    Controller[Controllers & Validation]
+    DBHelper[Database Helper]
+    SQLite[(SQLite DB)]
 
-## Trade-offs
-- **JWT vs Sessions**: JWT chosen for stateless scalability and simpler token-based API authentication.
-- **RBAC vs ABAC**: Role-Based Access Control is simpler to implement and reason about for a small-to-medium business app compared to complex Attribute-Based rules.
-- **SQLite vs PostgreSQL**: SQLite with WAL (Write-Ahead Logging) mode and STRICT transactions is used for demo portability and zero-configuration while still demonstrating true ACID compliance.
-- **Append-only Audit Logs**: Hard deletes are permitted on entities for GDPR, but audit logs are append-only to preserve the historical record of *who* deleted the data.
+    Client -->|HTTP GET/POST| Router
+    Router --> Auth
+    Auth --> Controller
+    Controller --> DBHelper
+    DBHelper --> SQLite
+```
 
-## Quick Start
+## ✨ Built With
+- **Frontend:** Vanilla JS, HTML5, and **Tailwind CSS** (via CDN for rapid prototyping and zero-build overhead). Glassmorphism UI patterns and responsive design natively built in.
+- **Backend:** Node.js, Express.js.
+- **Database:** `sql.js` (SQLite in-memory/file).
+- **Security:** `helmet` for headers, `express-rate-limit`, bcrypt for password hashing, and JWT for stateless authentication.
 
-1. Install dependencies:
-   \`\`\`bash
+## 🧠 Why & Trade-Offs
+- **Tailwind CSS via CDN:** Chosen for zero-configuration, immediate UI iteration, and stripping away redundant `style.css` complexity. *Trade-off:* Slightly heavier initial HTML load and missing PurgeCSS for production. Ideal for proof-of-concept enterprise dashboards.
+- **Synchronous SQLite (`sql.js`):** Ensures absolute predictability for small datasets and guarantees ACID properties strictly through manual rollback/commit mechanisms. *Trade-off:* Blocks the Node.js event loop on large queries. Fits well for single-tenant ERP solutions but requires scaling (e.g., PostgreSQL) for heavy concurrency.
+- **Centralized Error Handling:** All controllers are wrapped in custom `asyncHandler` or `syncHandler` interceptors that pipe errors directly into Express's error middleware. *Trade-off:* Minor boilerplate in controller exports, but guarantees a 100% leak-proof HTTP response cycle.
+
+## 🚀 Quick Start
+
+1. **Install Dependencies**
+   ```bash
    npm install
-   \`\`\`
+   ```
 
-2. Start the server:
-   \`\`\`bash
+2. **Run the Server**
+   ```bash
    npm start
-   \`\`\`
+   ```
 
-3. Navigate to \`http://localhost:3000\`
+3. **Access the Application**
+   Navigate to `http://localhost:3000` in your web browser.
 
-### Default Credentials
-The database automatically seeds with the following users (Password for all: \`admin123\`):
-- **Admin**: admin@crm.com
-- **Manager**: manager@crm.com
-- **Sales**: sales@crm.com
-- **Viewer**: viewer@crm.com
-
-## Permission Matrix
-
-| Feature | Admin | Manager | Sales | Viewer |
-| :--- | :---: | :---: | :---: | :---: |
-| View Dashboard | ✅ | ✅ | ✅ | ✅ |
-| View Contacts/Deals | ✅ (All) | ✅ (All) | ✅ (Own) | ✅ (All) |
-| Create Contacts/Deals | ✅ | ✅ | ✅ | ❌ |
-| View Audit Logs | ✅ | ❌ | ❌ | ❌ |
-
-## Audit Trail Documentation
-The system implements a transparent `auditLog` middleware that automatically captures state changes. 
-- **What gets logged**: `CREATE`, `UPDATE`, `DELETE` operations on core entities.
-- **Fields captured**: User ID, Action Type, Entity Type, Entity ID, Timestamp, New State (JSON).
-- **Compliance**: The `audit_logs` table does not allow updates, ensuring historical integrity.
+### Default Accounts
+- **Admin:** `admin@crm.com` / `admin123`
+- **Manager:** `manager@crm.com` / `admin123`
+- **Sales:** `sales@crm.com` / `admin123`
+- **Viewer:** `viewer@crm.com` / `admin123`

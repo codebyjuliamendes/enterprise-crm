@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   
   if (!token) {
-    window.location.href = '/login';
+    window.location.href = '/'; // or /login
     return;
   }
 
@@ -36,13 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('logout-btn').addEventListener('click', () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login';
+    window.location.href = '/';
   });
 
   // Theme Toggle
   document.getElementById('theme-toggle').addEventListener('click', () => {
-    const isDark = document.body.getAttribute('data-theme') === 'dark';
-    document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.documentElement.classList.toggle('dark');
   });
 
   // API Fetch Wrapper
@@ -55,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const res = await fetch(url, options);
     if (res.status === 401 || res.status === 403) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/';
     }
     return res.json();
   };
@@ -73,10 +72,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const contacts = await apiFetch('/api/contacts');
       const tbody = document.querySelector('#contacts-table tbody');
       tbody.innerHTML = contacts.map(c => `
-        <tr>
-          <td>${c.name}</td>
-          <td>${c.email}</td>
-          <td>${c.phone || '-'}</td>
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+          <td class="px-6 py-4">${c.name}</td>
+          <td class="px-6 py-4">${c.email}</td>
+          <td class="px-6 py-4">${c.phone || '-'}</td>
         </tr>
       `).join('');
     }
@@ -89,8 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const col = document.querySelector(`.kanban-col[data-stage="${deal.stage}"] .kanban-items`);
         if (col) {
           const card = document.createElement('div');
-          card.className = 'kanban-card';
-          card.innerHTML = `<strong>${deal.title}</strong><br>$${deal.value.toLocaleString()}<br><small>${deal.contact_name}</small>`;
+          card.className = 'kanban-card bg-white dark:bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md transition-shadow';
+          card.innerHTML = `<strong class="text-slate-900 dark:text-white">${deal.title}</strong><br><span class="text-blue-600 dark:text-blue-400 font-medium">$${deal.value.toLocaleString()}</span><br><small class="text-slate-500 dark:text-slate-400">${deal.contact_name}</small>`;
           col.appendChild(card);
         }
       });
@@ -100,12 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const logs = await apiFetch('/api/audit-logs');
       const tbody = document.querySelector('#audit-table tbody');
       tbody.innerHTML = logs.map(l => `
-        <tr>
-          <td>${new Date(l.created_at).toLocaleString()}</td>
-          <td>${l.user_name}</td>
-          <td>${l.action}</td>
-          <td>${l.entity_type}</td>
-          <td>${l.entity_id}</td>
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+          <td class="px-6 py-4">${new Date(l.created_at).toLocaleString()}</td>
+          <td class="px-6 py-4">${l.user_name}</td>
+          <td class="px-6 py-4">${l.action}</td>
+          <td class="px-6 py-4">${l.entity_type}</td>
+          <td class="px-6 py-4">${l.entity_id}</td>
         </tr>
       `).join('');
     }
