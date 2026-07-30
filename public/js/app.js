@@ -59,6 +59,29 @@ document.addEventListener('DOMContentLoaded', () => {
     return res.json();
   };
 
+  // Toast System
+  window.showToast = (message, type = 'success') => {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const iconName = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-circle' : 'info');
+    const colorClass = type === 'success' ? 'text-green-500' : (type === 'error' ? 'text-red-500' : 'text-blue-500');
+    
+    toast.className = `flex items-center gap-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-5 opacity-0`;
+    toast.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5 ${colorClass}"></i><span class="text-sm font-medium text-slate-800 dark:text-slate-100">${message}</span>`;
+    
+    container.appendChild(toast);
+    lucide.createIcons({ root: toast });
+    
+    requestAnimationFrame(() => {
+      toast.classList.remove('translate-y-5', 'opacity-0');
+    });
+
+    setTimeout(() => {
+      toast.classList.add('translate-y-5', 'opacity-0');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  };
+
   // Load Data based on section
   const loadData = async (section) => {
     if (section === 'overview') {
@@ -69,8 +92,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     if (section === 'contacts') {
-      const contacts = await apiFetch('/api/contacts');
       const tbody = document.querySelector('#contacts-table tbody');
+      // Skeleton
+      tbody.innerHTML = Array(5).fill().map(() => `
+        <tr>
+          <td class="px-6 py-4"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-3/4"></div></td>
+          <td class="px-6 py-4"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-1/2"></div></td>
+          <td class="px-6 py-4"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-2/3"></div></td>
+        </tr>
+      `).join('');
+      
+      const contacts = await apiFetch('/api/contacts');
       tbody.innerHTML = contacts.map(c => `
         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
           <td class="px-6 py-4">${c.name}</td>
@@ -78,9 +110,20 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="px-6 py-4">${c.phone || '-'}</td>
         </tr>
       `).join('');
+      window.showToast('Contacts loaded', 'success');
     }
     
     if (section === 'deals') {
+      document.querySelectorAll('.kanban-items').forEach(el => {
+        el.innerHTML = Array(2).fill().map(() => `
+          <div class="bg-white dark:bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 animate-pulse">
+            <div class="h-4 bg-slate-200 dark:bg-slate-600 rounded w-3/4 mb-2"></div>
+            <div class="h-4 bg-slate-200 dark:bg-slate-600 rounded w-1/2 mb-2"></div>
+            <div class="h-3 bg-slate-200 dark:bg-slate-600 rounded w-full"></div>
+          </div>
+        `).join('');
+      });
+      
       const deals = await apiFetch('/api/deals');
       document.querySelectorAll('.kanban-items').forEach(el => el.innerHTML = '');
       
@@ -93,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
           col.appendChild(card);
         }
       });
+      window.showToast('Deals loaded', 'success');
     }
     
     if (section === 'audit' && user.role === 'admin') {
@@ -107,6 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <td class="px-6 py-4">${l.entity_id}</td>
         </tr>
       `).join('');
+    }
+    
+    // Re-initialize any dynamic icons that may have been added
+    if (window.lucide) {
+      lucide.createIcons();
     }
   };
 

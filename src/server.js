@@ -3,17 +3,19 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 const apiRoutes = require('./routes/api');
 const db = require('./db/db');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3004;
 
 // Security Middlewares
 app.use(helmet({
   contentSecurityPolicy: false // Disabled for simplicity in demo with inline scripts/styles if any
 }));
 app.use(cors());
+app.use(compression());
 app.use(express.json());
 
 // Rate limiting

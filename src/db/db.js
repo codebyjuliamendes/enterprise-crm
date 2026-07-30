@@ -86,6 +86,15 @@ const init = async () => {
       new_value TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_contacts_company_id ON contacts(company_id);
+    CREATE INDEX IF NOT EXISTS idx_contacts_owner_id ON contacts(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_deals_contact_id ON deals(contact_id);
+    CREATE INDEX IF NOT EXISTS idx_deals_owner_id ON deals(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_activities_contact_id ON activities(contact_id);
+    CREATE INDEX IF NOT EXISTS idx_activities_deal_id ON activities(deal_id);
+    CREATE INDEX IF NOT EXISTS idx_activities_user_id ON activities(user_id);
   `);
 
   // Helper inside init to query
