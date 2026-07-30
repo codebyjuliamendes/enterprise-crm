@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Enterprise CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="sidebar-header">CRM ERP</div>
+      <ul class="nav-links">
+        <li class="active" data-target="overview">Overview</li>
+        <li data-target="contacts">Contacts</li>
+        <li data-target="deals">Pipeline</li>
+        <li data-target="audit" data-role-restricted="true" data-roles="admin">Audit Logs</li>
+      </ul>
+      <div style="margin-top: auto; padding: 1rem;">
+        <button id="theme-toggle" class="btn-primary" style="background:var(--surface); color:var(--text); border:1px solid var(--border)">Toggle Theme</button>
+        <button id="logout-btn" class="btn-primary" style="margin-top:0.5rem; background:var(--danger)">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="header-bar">
+        <h2>Dashboard</h2>
+        <div id="user-info">Logged in as: <span>...</span></div>
+      </div>
+
+      <!-- Overview Section -->
+      <section id="overview" class="view-section active">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-title">Total Contacts</div>
+            <div class="kpi-value" id="kpi-contacts">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Active Deals</div>
+            <div class="kpi-value" id="kpi-deals">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Won Revenue</div>
+            <div class="kpi-value" id="kpi-revenue">$0</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contacts Section -->
+      <section id="contacts" class="view-section">
+        <h3>Contacts</h3>
+        <div class="table-container" style="margin-top:1rem;">
+          <table id="contacts-table">
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Phone</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Deals Section -->
+      <section id="deals" class="view-section">
+        <h3>Pipeline</h3>
+        <div class="kanban" id="kanban-board" style="margin-top:1rem;">
+          <div class="kanban-col" data-stage="Lead"><h3>Lead</h3><div class="kanban-items"></div></div>
+          <div class="kanban-col" data-stage="Qualified"><h3>Qualified</h3><div class="kanban-items"></div></div>
+          <div class="kanban-col" data-stage="Proposal"><h3>Proposal</h3><div class="kanban-items"></div></div>
+          <div class="kanban-col" data-stage="Won"><h3>Won</h3><div class="kanban-items"></div></div>
+          <div class="kanban-col" data-stage="Lost"><h3>Lost</h3><div class="kanban-items"></div></div>
+        </div>
+      </section>
+
+      <!-- Audit Logs Section -->
+      <section id="audit" class="view-section">
+        <h3>Security Audit Logs</h3>
+        <div class="table-container" style="margin-top:1rem;">
+          <table id="audit-table">
+            <thead>
+              <tr><th>Date</th><th>User</th><th>Action</th><th>Entity</th><th>ID</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/js/app.js"></script>
+</body>
+</html>
