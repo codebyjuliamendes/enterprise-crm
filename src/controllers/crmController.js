@@ -2,16 +2,12 @@ const { db, transaction, save } = require('../db/db');
 const { queryAll, queryOne, runSql } = require('../db/db-helper');
 
 /**
- * Wraps synchronous controller functions to catch errors and pass them to Express error middleware.
+ * Wraps async controller functions to catch errors and pass them to Express error middleware.
  * @param {Function} fn - The controller function.
  * @returns {Function} Express middleware function.
  */
-const syncHandler = (fn) => (req, res, next) => {
-  try {
-    fn(req, res, next);
-  } catch (error) {
-    next(error);
-  }
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
 };
 
 /**
@@ -19,7 +15,7 @@ const syncHandler = (fn) => (req, res, next) => {
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  */
-const getContacts = (req, res) => {
+const getContacts = async (req, res) => {
   let query = 'SELECT * FROM contacts';
   const params = [];
   
@@ -37,7 +33,7 @@ const getContacts = (req, res) => {
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  */
-const createContact = (req, res) => {
+const createContact = async (req, res) => {
   const { name, email, phone, company_id, tags } = req.body;
   if (!name || !email) {
     const error = new Error('Name and email are required');
@@ -46,13 +42,19 @@ const createContact = (req, res) => {
   }
   const owner_id = req.user.id;
   
+  let resultId;
   transaction(() => {
     runSql(db, 'INSERT INTO contacts (name, email, phone, company_id, tags, owner_id) VALUES (?, ?, ?, ?, ?, ?)', [name, email, phone, company_id, tags, owner_id]);
+    resultId = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
+    
+    if (req.auditEvent) {
+      runSql(db, 'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, new_value) VALUES (?, ?, ?, ?, ?)', 
+        [req.user.id, req.auditEvent.action, req.auditEvent.entityType, resultId, JSON.stringify({ id: resultId, name, email, phone })]);
+    }
   });
   save();
-  const result = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
   
-  res.status(201).json({ id: result, name, email, phone });
+  res.status(201).json({ id: resultId, name, email, phone });
 };
 
 /**
@@ -60,7 +62,7 @@ const createContact = (req, res) => {
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  */
-const getDeals = (req, res) => {
+const getDeals = async (req, res) => {
   let query = 'SELECT deals.*, contacts.name as contact_name FROM deals LEFT JOIN contacts ON deals.contact_id = contacts.id';
   const params = [];
   
@@ -78,7 +80,7 @@ const getDeals = (req, res) => {
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  */
-const createDealWithActivity = (req, res) => {
+const createDealWithActivity = async (req, res) => {
   const { title, value, stage, contact_id, activity_notes } = req.body;
   if (!title || value == null || !contact_id) {
     const error = new Error('Title, value, and contact_id are required');
@@ -94,7 +96,14 @@ const createDealWithActivity = (req, res) => {
     if (activity_notes) {
       runSql(db, 'INSERT INTO activities (type, notes, contact_id, deal_id, user_id) VALUES (?, ?, ?, ?, ?)', ['meeting', activity_notes, contact_id, dealId, owner_id]);
     }
-    return { id: dealId, title, value, stage };
+    
+    const dealResult = { id: dealId, title, value, stage };
+    
+    if (req.auditEvent) {
+      runSql(db, 'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, new_value) VALUES (?, ?, ?, ?, ?)', 
+        [req.user.id, req.auditEvent.action, req.auditEvent.entityType, dealId, JSON.stringify(dealResult)]);
+    }
+    return dealResult;
   });
   save();
   res.status(201).json(result);
@@ -105,7 +114,7 @@ const createDealWithActivity = (req, res) => {
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  */
-const updateDealStage = (req, res) => {
+const updateDealStage = async (req, res) => {
   const { id } = req.params;
   const { stage } = req.body;
   if (!stage) {
@@ -116,6 +125,11 @@ const updateDealStage = (req, res) => {
   
   transaction(() => {
     runSql(db, 'UPDATE deals SET stage = ? WHERE id = ?', [stage, id]);
+    
+    if (req.auditEvent) {
+      runSql(db, 'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, new_value) VALUES (?, ?, ?, ?, ?)', 
+        [req.user.id, req.auditEvent.action, req.auditEvent.entityType, id, JSON.stringify({ id, stage })]);
+    }
   });
   save();
   res.json({ id, stage });
@@ -126,7 +140,7 @@ const updateDealStage = (req, res) => {
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  */
-const getStats = (req, res) => {
+const getStats = async (req, res) => {
   const contactsCountRow = queryOne(db, 'SELECT COUNT(*) as count FROM contacts');
   const contactsCount = contactsCountRow ? contactsCountRow.count : 0;
   const dealsCountRow = queryOne(db, 'SELECT COUNT(*) as count FROM deals');
@@ -142,17 +156,43 @@ const getStats = (req, res) => {
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  */
-const getAuditLogs = (req, res) => {
+const getAuditLogs = async (req, res) => {
   const logs = queryAll(db, 'SELECT audit_logs.*, users.name as user_name FROM audit_logs LEFT JOIN users ON audit_logs.user_id = users.id ORDER BY created_at DESC LIMIT 100');
   res.json(logs);
 };
 
+/**
+ * LGPD Kill Switch: Anonymize PII.
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ */
+const lgpdAnonymize = async (req, res) => {
+  const crypto = require('crypto');
+  const hash = (str) => crypto.createHash('sha256').update(str || '').digest('hex');
+  
+  transaction(() => {
+    const contacts = queryAll(db, 'SELECT id, name, email, phone FROM contacts');
+    for (const c of contacts) {
+      const hashedName = c.name ? hash(c.name) : null;
+      const hashedEmail = c.email ? hash(c.email) : null;
+      const hashedPhone = c.phone ? hash(c.phone) : null;
+      runSql(db, 'UPDATE contacts SET name = ?, email = ?, phone = ? WHERE id = ?', [hashedName, hashedEmail, hashedPhone, c.id]);
+    }
+    
+    runSql(db, 'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, new_value) VALUES (?, ?, ?, ?, ?)', 
+      [req.user.id, 'ANONYMIZE', 'SYSTEM', null, 'LGPD Kill Switch Executed']);
+  });
+  save();
+  res.json({ message: 'LGPD Anonymization complete.' });
+};
+
 module.exports = {
-  getContacts: syncHandler(getContacts), 
-  createContact: syncHandler(createContact),
-  getDeals: syncHandler(getDeals), 
-  createDealWithActivity: syncHandler(createDealWithActivity), 
-  updateDealStage: syncHandler(updateDealStage),
-  getStats: syncHandler(getStats), 
-  getAuditLogs: syncHandler(getAuditLogs)
+  getContacts: asyncHandler(getContacts), 
+  createContact: asyncHandler(createContact),
+  getDeals: asyncHandler(getDeals), 
+  createDealWithActivity: asyncHandler(createDealWithActivity), 
+  updateDealStage: asyncHandler(updateDealStage),
+  getStats: asyncHandler(getStats), 
+  getAuditLogs: asyncHandler(getAuditLogs),
+  lgpdAnonymize: asyncHandler(lgpdAnonymize)
 };

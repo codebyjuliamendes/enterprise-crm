@@ -25,4 +25,7 @@ router.put('/deals/:id/stage', authorize(['admin', 'manager', 'sales']), auditLo
 // Audit (Admin only)
 router.get('/audit-logs', authorize(['admin']), crmController.getAuditLogs);
 
+// LGPD Kill Switch
+router.post('/lgpd/anonymize', authorize(['admin']), crmController.lgpdAnonymize);
+
 module.exports = router;

@@ -59,3 +59,8 @@ graph TD
 - **Manager:** `manager@crm.com` / `admin123`
 - **Sales:** `sales@crm.com` / `admin123`
 - **Viewer:** `viewer@crm.com` / `admin123`
+
+## ?? V3 Upgrades
+- **Audit Log Transactional All-or-Nothing:** Audit logs are fully integrated inside the main controllers' transactions. In case of an audit failure, the whole transaction rolls back, guaranteeing data consistency.
+- **LGPD Kill Switch:** A new path /api/lgpd/anonymize provides an instant PII hashing capability to immediately comply with data erasure protocols.
+- **Async Controllers:** Implemented syncHandler in controllers.
