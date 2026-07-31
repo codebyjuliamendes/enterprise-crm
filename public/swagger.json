@@ -1,0 +1,93 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Enterprise CRM API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/login": {
+      "post": {
+        "summary": "Login",
+        "responses": {
+          "200": { "description": "Successful login" }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "summary": "Get current user",
+        "responses": {
+          "200": { "description": "User details" }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "summary": "Get CRM stats",
+        "responses": {
+          "200": { "description": "Stats object" }
+        }
+      }
+    },
+    "/api/contacts": {
+      "get": {
+        "summary": "List contacts",
+        "responses": {
+          "200": { "description": "List of contacts" }
+        }
+      },
+      "post": {
+        "summary": "Create contact",
+        "responses": {
+          "201": { "description": "Contact created" }
+        }
+      }
+    },
+    "/api/deals": {
+      "get": {
+        "summary": "List deals",
+        "responses": {
+          "200": { "description": "List of deals" }
+        }
+      },
+      "post": {
+        "summary": "Create deal",
+        "responses": {
+          "201": { "description": "Deal created" }
+        }
+      }
+    },
+    "/api/deals/{id}/stage": {
+      "put": {
+        "summary": "Update deal stage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Deal updated" }
+        }
+      }
+    },
+    "/api/audit-logs": {
+      "get": {
+        "summary": "Get audit logs",
+        "responses": {
+          "200": { "description": "Audit logs list" }
+        }
+      }
+    },
+    "/api/lgpd/anonymize": {
+      "post": {
+        "summary": "Anonymize data",
+        "responses": {
+          "200": { "description": "Data anonymized" }
+        }
+      }
+    }
+  }
+}

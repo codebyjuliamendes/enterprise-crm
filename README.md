@@ -63,4 +63,10 @@ graph TD
 ## ?? V3 Upgrades
 - **Audit Log Transactional All-or-Nothing:** Audit logs are fully integrated inside the main controllers' transactions. In case of an audit failure, the whole transaction rolls back, guaranteeing data consistency.
 - **LGPD Kill Switch:** A new path /api/lgpd/anonymize provides an instant PII hashing capability to immediately comply with data erasure protocols.
-- **Async Controllers:** Implemented syncHandler in controllers.
+- **Async Controllers:** Implemented  syncHandler in controllers.
+
+## 🚀 V4 Upgrades
+- **Kubernetes Ready:** Added `k8s/` directory with Deployment, Service, and Ingress manifests for scalable orchestration on Port 3004.
+- **CI/CD Pipelines:** Integrated GitHub Actions workflow (`.github/workflows/ci-cd.yml`) for automated testing and Docker image validation.
+- **Swagger Documentation:** Automatically generated OpenAPI Swagger specification available at `/api-docs` to ease developer onboarding.
+- **Health Checks:** Added a dedicated `/health` probe endpoint for container lifecycle management.

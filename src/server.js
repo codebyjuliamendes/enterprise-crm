@@ -33,7 +33,14 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Routes
 app.use('/api', apiRoutes);
 
+// Health Check
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 // Fallback for HTML
+app.get('/api-docs', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/api-docs.html'));
+});
+
 app.get('*', (req, res) => {
   if (req.path === '/' || req.path === '/login') {
     res.sendFile(path.join(__dirname, '../public/index.html'));
