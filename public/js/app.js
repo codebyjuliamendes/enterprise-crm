@@ -1,164 +1,474 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  
+(function () {
+  'use strict';
+
+  var STAGES = ['Lead', 'Qualified', 'Proposal', 'Won', 'Lost'];
+  var WRITE_ROLES = ['admin', 'manager', 'sales'];
+  var VIEWS = {
+    overview: { title: 'Overview', roles: null },
+    contacts: { title: 'Contacts', roles: null },
+    deals: { title: 'Pipeline', roles: null },
+    audit: { title: 'Audit logs', roles: ['admin'] },
+  };
+
+  var token = null;
+  try {
+    token = localStorage.getItem('token');
+  } catch (e) {
+    token = null;
+  }
   if (!token) {
-    window.location.href = '/'; // or /login
+    window.location.replace('/login');
     return;
   }
 
-  // Setup User Info
-  document.querySelector('#user-info span').textContent = `${user.name} (${user.role})`;
-  
-  // Setup Role-based Nav
-  document.querySelectorAll('[data-role-restricted="true"]').forEach(el => {
-    const allowedRoles = el.getAttribute('data-roles').split(',');
-    if (!allowedRoles.includes(user.role)) {
-      el.remove();
+  var currentUser = readStoredUser();
+  var currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+  var dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  var date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
+
+  function readStoredUser() {
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null');
+    } catch (e) {
+      return null;
     }
-  });
+  }
 
-  // Navigation Logic
-  document.querySelectorAll('.nav-links li').forEach(li => {
-    li.addEventListener('click', (e) => {
-      document.querySelectorAll('.nav-links li').forEach(n => n.classList.remove('active'));
-      e.target.classList.add('active');
-      
-      const target = e.target.getAttribute('data-target');
-      document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
-      document.getElementById(target).classList.add('active');
-      
-      loadData(target);
+  function $(selector, root) {
+    return (root || document).querySelector(selector);
+  }
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (key) {
+      if (key === 'text') node.textContent = attrs[key];
+      else if (key === 'className') node.className = attrs[key];
+      else node.setAttribute(key, attrs[key]);
     });
-  });
+    (children || []).forEach(function (child) {
+      if (child) node.appendChild(child);
+    });
+    return node;
+  }
 
-  // Logout
-  document.getElementById('logout-btn').addEventListener('click', () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/';
-  });
+  function formatDate(value, withTime) {
+    if (!value) return '-';
+    var d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return (withTime ? dateTime : date).format(d);
+  }
 
-  // Theme Toggle
-  document.getElementById('theme-toggle').addEventListener('click', () => {
-    document.documentElement.classList.toggle('dark');
-  });
+  function canWrite() {
+    return currentUser && WRITE_ROLES.indexOf(currentUser.role) !== -1;
+  }
 
-  // API Fetch Wrapper
-  const apiFetch = async (url, options = {}) => {
-    options.headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    const res = await fetch(url, options);
-    if (res.status === 401 || res.status === 403) {
+  function logout() {
+    try {
       localStorage.removeItem('token');
-      window.location.href = '/';
+      localStorage.removeItem('user');
+    } catch (e) {
+      /* ignore */
     }
-    return res.json();
-  };
+    window.location.replace('/login');
+  }
 
-  // Toast System
-  window.showToast = (message, type = 'success') => {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    const iconName = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-circle' : 'info');
-    const colorClass = type === 'success' ? 'text-green-500' : (type === 'error' ? 'text-red-500' : 'text-blue-500');
-    
-    toast.className = `flex items-center gap-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-5 opacity-0`;
-    toast.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5 ${colorClass}"></i><span class="text-sm font-medium text-slate-800 dark:text-slate-100">${message}</span>`;
-    
-    container.appendChild(toast);
-    lucide.createIcons({ root: toast });
-    
-    requestAnimationFrame(() => {
-      toast.classList.remove('translate-y-5', 'opacity-0');
+  /** Fetch wrapper: JSON in/out, bearer token, session expiry handling. */
+  async function api(url, options) {
+    var opts = options || {};
+    var headers = { Authorization: 'Bearer ' + token };
+    if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+    var res = await fetch(url, {
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     });
+    var data = await res.json().catch(function () {
+      return null;
+    });
+    if (res.status === 401) {
+      logout();
+      throw new Error('Your session has expired.');
+    }
+    if (!res.ok) {
+      var message = (data && data.error) || 'Request failed (' + res.status + ')';
+      if (data && Array.isArray(data.details) && data.details.length) {
+        message +=
+          ': ' +
+          data.details
+            .map(function (d) {
+              return d.field + ' ' + d.message;
+            })
+            .join('; ');
+      }
+      var error = new Error(message);
+      error.status = res.status;
+      throw error;
+    }
+    return data;
+  }
 
-    setTimeout(() => {
-      toast.classList.add('translate-y-5', 'opacity-0');
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+  function toast(message, type) {
+    var container = $('#toast-container');
+    var node = el('div', {
+      className: 'toast' + (type === 'error' ? ' error' : ''),
+      text: message,
+    });
+    container.appendChild(node);
+    setTimeout(function () {
+      node.remove();
+    }, 4000);
+  }
+
+  function setState(id, message, isError) {
+    var node = document.getElementById(id);
+    node.textContent = message || '';
+    node.hidden = !message;
+    node.classList.toggle('error', !!isError);
+  }
+
+  function skeletonRows(tbody, columns, rows) {
+    tbody.replaceChildren();
+    for (var r = 0; r < rows; r += 1) {
+      var tr = el('tr', { 'aria-hidden': 'true' });
+      for (var c = 0; c < columns; c += 1) {
+        tr.appendChild(el('td', {}, [el('span', { className: 'skeleton' })]));
+      }
+      tbody.appendChild(tr);
+    }
+  }
+
+  // ---------- Theme ----------
+  function effectiveTheme() {
+    var explicit = document.documentElement.getAttribute('data-theme');
+    if (explicit) return explicit;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function syncThemeButton() {
+    var dark = effectiveTheme() === 'dark';
+    var btn = $('#theme-toggle');
+    btn.setAttribute('aria-pressed', String(dark));
+    $('span', btn).textContent = dark ? 'Light mode' : 'Dark mode';
+  }
+
+  $('#theme-toggle').addEventListener('click', function () {
+    var next = effectiveTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try {
+      localStorage.setItem('theme', next);
+    } catch (e) {
+      /* ignore */
+    }
+    syncThemeButton();
+  });
+  syncThemeButton();
+
+  $('#logout-btn').addEventListener('click', logout);
+
+  // ---------- User / roles ----------
+  function applyUser() {
+    var badge = $('#user-info strong');
+    badge.textContent = currentUser ? currentUser.name + ' (' + currentUser.role + ')' : '...';
+    document.querySelectorAll('[data-roles]').forEach(function (node) {
+      var roles = node.getAttribute('data-roles').split(',');
+      node.hidden = !(currentUser && roles.indexOf(currentUser.role) !== -1);
+    });
+    document.querySelectorAll('[data-write-only]').forEach(function (node) {
+      node.hidden = !canWrite();
+    });
+  }
+
+  // ---------- Views ----------
+  async function loadOverview() {
+    setState('overview-error', '');
+    try {
+      var stats = await api('/api/stats');
+      $('#kpi-contacts').textContent = String(stats.contactsCount);
+      $('#kpi-open-deals').textContent = String(stats.openDealsCount);
+      $('#kpi-pipeline').textContent = currency.format(stats.pipelineValue || 0);
+      $('#kpi-revenue').textContent = currency.format(stats.totalRevenue || 0);
+    } catch (err) {
+      setState('overview-error', 'Could not load statistics. ' + err.message, true);
+    }
+  }
+
+  async function loadContacts() {
+    var tbody = $('#contacts-table tbody');
+    setState('contacts-state', '');
+    skeletonRows(tbody, 4, 3);
+    try {
+      var contacts = await api('/api/contacts');
+      tbody.replaceChildren();
+      contacts.forEach(function (c) {
+        tbody.appendChild(
+          el('tr', {}, [
+            el('td', { text: c.name }),
+            el('td', { text: c.email || '-' }),
+            el('td', { text: c.phone || '-' }),
+            el('td', { text: formatDate(c.created_at, false) }),
+          ]),
+        );
+      });
+      if (!contacts.length) setState('contacts-state', 'No contacts yet.');
+      return contacts;
+    } catch (err) {
+      tbody.replaceChildren();
+      setState('contacts-state', 'Could not load contacts. ' + err.message, true);
+      return [];
+    }
+  }
+
+  function buildKanban() {
+    var board = $('#kanban-board');
+    board.replaceChildren();
+    STAGES.forEach(function (stage) {
+      var headingId = 'stage-' + stage.toLowerCase();
+      var col = el(
+        'section',
+        { className: 'kanban-col', 'data-stage': stage, 'aria-labelledby': headingId },
+        [
+          el('h3', { id: headingId }, [
+            el('span', { text: stage }),
+            el('span', { className: 'count', text: '0' }),
+          ]),
+          el('ul', { className: 'kanban-list' }),
+        ],
+      );
+      board.appendChild(col);
+    });
+  }
+
+  function dealCard(deal) {
+    var li = el('li', { className: 'deal-card' }, [
+      el('span', { className: 'deal-title', text: deal.title }),
+      el('span', { className: 'deal-value', text: currency.format(deal.value || 0) }),
+      el('span', { className: 'deal-contact', text: deal.contact_name || 'No contact' }),
+    ]);
+    if (canWrite()) {
+      var selectId = 'deal-stage-' + deal.id;
+      var select = el('select', { id: selectId, 'data-deal-id': String(deal.id) });
+      STAGES.forEach(function (s) {
+        var opt = el('option', { value: s, text: s });
+        if (s === deal.stage) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.addEventListener('change', onStageChange);
+      li.appendChild(
+        el('label', { for: selectId, className: 'sr-only', text: 'Stage for ' + deal.title }),
+      );
+      li.appendChild(select);
+    }
+    return li;
+  }
+
+  async function onStageChange(event) {
+    var select = event.target;
+    var id = select.getAttribute('data-deal-id');
+    select.disabled = true;
+    try {
+      await api('/api/deals/' + encodeURIComponent(id) + '/stage', {
+        method: 'PUT',
+        body: { stage: select.value },
+      });
+      toast('Deal moved to ' + select.value);
+      await loadDeals();
+    } catch (err) {
+      toast('Could not update the deal: ' + err.message, 'error');
+      await loadDeals();
+    }
+  }
+
+  async function loadDeals() {
+    buildKanban();
+    setState('deals-state', 'Loading pipeline...');
+    try {
+      var deals = await api('/api/deals');
+      setState('deals-state', deals.length ? '' : 'No deals yet.');
+      STAGES.forEach(function (stage) {
+        var col = $('.kanban-col[data-stage="' + stage + '"]');
+        var list = $('.kanban-list', col);
+        var inStage = deals.filter(function (d) {
+          return d.stage === stage;
+        });
+        $('.count', col).textContent = String(inStage.length);
+        if (!inStage.length)
+          list.appendChild(el('li', { className: 'empty-col', text: 'No deals' }));
+        inStage.forEach(function (d) {
+          list.appendChild(dealCard(d));
+        });
+      });
+    } catch (err) {
+      setState('deals-state', 'Could not load deals. ' + err.message, true);
+    }
+  }
+
+  async function fillContactSelect() {
+    var select = $('#deal-contact');
+    try {
+      var contacts = await api('/api/contacts?limit=500');
+      var previous = select.value;
+      select.replaceChildren(el('option', { value: '', text: 'Select a contact' }));
+      contacts.forEach(function (c) {
+        select.appendChild(el('option', { value: String(c.id), text: c.name }));
+      });
+      select.value = previous;
+    } catch (err) {
+      toast('Could not load contacts for the deal form.', 'error');
+    }
+  }
+
+  async function loadAudit() {
+    var tbody = $('#audit-table tbody');
+    setState('audit-state', '');
+    skeletonRows(tbody, 5, 3);
+    try {
+      var logs = await api('/api/audit-logs');
+      tbody.replaceChildren();
+      logs.forEach(function (l) {
+        tbody.appendChild(
+          el('tr', {}, [
+            el('td', { text: formatDate(l.created_at, true) }),
+            el('td', { text: l.user_name || 'Unknown' }),
+            el('td', { className: 'mono', text: l.action }),
+            el('td', { className: 'mono', text: l.entity_type }),
+            el('td', { className: 'mono', text: l.entity_id == null ? '-' : String(l.entity_id) }),
+          ]),
+        );
+      });
+      if (!logs.length) setState('audit-state', 'No audit entries yet.');
+    } catch (err) {
+      tbody.replaceChildren();
+      setState('audit-state', 'Could not load audit logs. ' + err.message, true);
+    }
+  }
+
+  var loaders = {
+    overview: loadOverview,
+    contacts: loadContacts,
+    deals: function () {
+      if (canWrite()) fillContactSelect();
+      return loadDeals();
+    },
+    audit: loadAudit,
   };
 
-  // Load Data based on section
-  const loadData = async (section) => {
-    if (section === 'overview') {
-      const stats = await apiFetch('/api/stats');
-      document.getElementById('kpi-contacts').textContent = stats.contactsCount || 0;
-      document.getElementById('kpi-deals').textContent = stats.dealsCount || 0;
-      document.getElementById('kpi-revenue').textContent = `$${(stats.totalRevenue || 0).toLocaleString()}`;
-    }
-    
-    if (section === 'contacts') {
-      const tbody = document.querySelector('#contacts-table tbody');
-      // Skeleton
-      tbody.innerHTML = Array(5).fill().map(() => `
-        <tr>
-          <td class="px-6 py-4"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-3/4"></div></td>
-          <td class="px-6 py-4"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-1/2"></div></td>
-          <td class="px-6 py-4"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-2/3"></div></td>
-        </tr>
-      `).join('');
-      
-      const contacts = await apiFetch('/api/contacts');
-      tbody.innerHTML = contacts.map(c => `
-        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-          <td class="px-6 py-4">${c.name}</td>
-          <td class="px-6 py-4">${c.email}</td>
-          <td class="px-6 py-4">${c.phone || '-'}</td>
-        </tr>
-      `).join('');
-      window.showToast('Contacts loaded', 'success');
-    }
-    
-    if (section === 'deals') {
-      document.querySelectorAll('.kanban-items').forEach(el => {
-        el.innerHTML = Array(2).fill().map(() => `
-          <div class="bg-white dark:bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 animate-pulse">
-            <div class="h-4 bg-slate-200 dark:bg-slate-600 rounded w-3/4 mb-2"></div>
-            <div class="h-4 bg-slate-200 dark:bg-slate-600 rounded w-1/2 mb-2"></div>
-            <div class="h-3 bg-slate-200 dark:bg-slate-600 rounded w-full"></div>
-          </div>
-        `).join('');
-      });
-      
-      const deals = await apiFetch('/api/deals');
-      document.querySelectorAll('.kanban-items').forEach(el => el.innerHTML = '');
-      
-      deals.forEach(deal => {
-        const col = document.querySelector(`.kanban-col[data-stage="${deal.stage}"] .kanban-items`);
-        if (col) {
-          const card = document.createElement('div');
-          card.className = 'kanban-card bg-white dark:bg-slate-700 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:shadow-md transition-shadow';
-          card.innerHTML = `<strong class="text-slate-900 dark:text-white">${deal.title}</strong><br><span class="text-blue-600 dark:text-blue-400 font-medium">$${deal.value.toLocaleString()}</span><br><small class="text-slate-500 dark:text-slate-400">${deal.contact_name}</small>`;
-          col.appendChild(card);
-        }
-      });
-      window.showToast('Deals loaded', 'success');
-    }
-    
-    if (section === 'audit' && user.role === 'admin') {
-      const logs = await apiFetch('/api/audit-logs');
-      const tbody = document.querySelector('#audit-table tbody');
-      tbody.innerHTML = logs.map(l => `
-        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-          <td class="px-6 py-4">${new Date(l.created_at).toLocaleString()}</td>
-          <td class="px-6 py-4">${l.user_name}</td>
-          <td class="px-6 py-4">${l.action}</td>
-          <td class="px-6 py-4">${l.entity_type}</td>
-          <td class="px-6 py-4">${l.entity_id}</td>
-        </tr>
-      `).join('');
-    }
-    
-    // Re-initialize any dynamic icons that may have been added
-    if (window.lucide) {
-      lucide.createIcons();
-    }
-  };
+  function viewAllowed(name) {
+    var view = VIEWS[name];
+    return !!view && (!view.roles || (currentUser && view.roles.indexOf(currentUser.role) !== -1));
+  }
 
-  // Initial Load
-  loadData('overview');
-});
+  function showView(name, focus) {
+    if (!viewAllowed(name)) name = 'overview';
+    document.querySelectorAll('[data-view-section]').forEach(function (section) {
+      section.hidden = section.getAttribute('data-view-section') !== name;
+    });
+    document.querySelectorAll('.nav a').forEach(function (a) {
+      if (a.getAttribute('data-view') === name) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+    $('#view-title').textContent = VIEWS[name].title;
+    document.title = VIEWS[name].title + ' - Enterprise CRM';
+    if (focus) $('#main').focus();
+    loaders[name]();
+  }
+
+  window.addEventListener('hashchange', function () {
+    showView(location.hash.slice(1), true);
+  });
+
+  // ---------- Forms ----------
+  function bindForm(form, buildBody, url, onSuccess) {
+    var errorBox = $('[data-form-error]', form);
+    var button = $('button[type="submit"]', form);
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      if (button.disabled) return;
+      errorBox.hidden = true;
+      if (!form.checkValidity()) {
+        var invalid = form.querySelector(':invalid');
+        errorBox.textContent = 'Please fill in the required fields correctly.';
+        errorBox.hidden = false;
+        if (invalid) invalid.focus();
+        return;
+      }
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      try {
+        await api(url, { method: 'POST', body: buildBody(form) });
+        form.reset();
+        await onSuccess();
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.hidden = false;
+      } finally {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
+    });
+  }
+
+  function optional(value) {
+    var v = value.trim();
+    return v ? v : null;
+  }
+
+  bindForm(
+    $('#contact-form'),
+    function (form) {
+      return {
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        phone: optional(form.phone.value),
+        tags: optional(form.tags.value),
+      };
+    },
+    '/api/contacts',
+    async function () {
+      toast('Contact saved');
+      await loadContacts();
+    },
+  );
+
+  var stageSelect = $('#deal-stage');
+  STAGES.forEach(function (s) {
+    stageSelect.appendChild(el('option', { value: s, text: s }));
+  });
+
+  bindForm(
+    $('#deal-form'),
+    function (form) {
+      return {
+        title: form.title.value.trim(),
+        value: Number(form.value.value),
+        contact_id: Number(form.contact_id.value),
+        stage: form.stage.value,
+        activity_notes: optional(form.activity_notes.value),
+      };
+    },
+    '/api/deals',
+    async function () {
+      toast('Deal saved');
+      await loadDeals();
+    },
+  );
+
+  // ---------- Boot ----------
+  applyUser();
+  showView(location.hash.slice(1) || 'overview', false);
+  api('/api/me')
+    .then(function (data) {
+      currentUser = data.user;
+      try {
+        localStorage.setItem('user', JSON.stringify(currentUser));
+      } catch (e) {
+        /* ignore */
+      }
+      var before = location.hash.slice(1) || 'overview';
+      applyUser();
+      if (!viewAllowed(before)) showView('overview', false);
+      else if (before === 'deals') showView('deals', false);
+    })
+    .catch(function () {
+      /* api() already redirects on 401 */
+    });
+})();
