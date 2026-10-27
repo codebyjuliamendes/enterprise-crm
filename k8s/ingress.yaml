@@ -2,17 +2,18 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: enterprise-crm-ingress
-  annotations:
-    kubernetes.io/ingress.class: nginx
+  labels:
+    app: enterprise-crm
 spec:
+  ingressClassName: nginx
   rules:
-  - host: enterprise-crm.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: enterprise-crm-svc
-            port:
-              number: 3004
+    - host: enterprise-crm.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: enterprise-crm-svc
+                port:
+                  name: http
