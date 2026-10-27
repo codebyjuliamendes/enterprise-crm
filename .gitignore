@@ -1,2 +1,12 @@
-node_modules/  
-.env 
+node_modules/
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-journal
+*.db.*.tmp
+coverage/
+test-results/
+.DS_Store
+npm-debug.log*
