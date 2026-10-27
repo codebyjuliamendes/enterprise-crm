@@ -1,70 +1,71 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const path = require('path');
-const rateLimit = require('express-rate-limit');
-const compression = require('compression');
-const apiRoutes = require('./routes/api');
-const db = require('./db/db');
+'use strict';
 
-const app = express();
-const PORT = process.env.PORT || 3004;
+const { loadConfig } = require('./config');
+const { createLogger } = require('./logger');
+const { openDatabase } = require('./db/database');
+const { createRepositories } = require('./repositories');
+const { seed } = require('./db/seed');
+const { createApp } = require('./app');
 
-// Security Middlewares
-app.use(helmet({
-  contentSecurityPolicy: false // Disabled for simplicity in demo with inline scripts/styles if any
-}));
-app.use(cors());
-app.use(compression());
-app.use(express.json());
+const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-// Rate limiting
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window`
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/', apiLimiter);
-
-// Static files
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Routes
-app.use('/api', apiRoutes);
-
-// Health Check
-app.get('/health', (req, res) => res.status(200).send('OK'));
-
-// Fallback for HTML
-app.get('/api-docs', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/api-docs.html'));
-});
-
-app.get('*', (req, res) => {
-  if (req.path === '/' || req.path === '/login') {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
-  } else {
-    res.sendFile(path.join(__dirname, '../public/dashboard.html'));
-  }
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(`[Error] ${err.message}`);
-  res.status(err.status || 500).json({ 
-    error: err.message || 'Internal Server Error' 
-  });
-});
-
-// Initialize DB and Start Server
-db.init()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Enterprise CRM running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Failed to initialize database', err);
+async function main() {
+  let config;
+  try {
+    config = loadConfig();
+  } catch (err) {
+    // Logger depends on config, so report configuration errors directly.
+    console.error(JSON.stringify({ level: 'fatal', msg: err.message }));
     process.exit(1);
+  }
+  const logger = createLogger(config);
+  config.warnings.forEach((w) => logger.warn(w));
+
+  const db = await openDatabase(config.dbPath);
+  await seed({ db, repos: createRepositories(db), config, logger });
+  const app = createApp({ db, config, logger });
+
+  const server = app.listen(config.port, config.host, () => {
+    logger.info(
+      { port: config.port, env: config.env, db: config.dbPath },
+      'Enterprise CRM listening',
+    );
   });
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
+
+  let shuttingDown = false;
+  const shutdown = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    logger.info({ signal }, 'Shutting down');
+    const timer = setTimeout(() => {
+      logger.error('Forced shutdown after timeout');
+      db.close();
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS);
+    timer.unref();
+    server.close((err) => {
+      try {
+        db.close();
+      } catch (closeErr) {
+        logger.error({ err: closeErr }, 'Failed to flush database on shutdown');
+      }
+      if (err) logger.error({ err }, 'Error while closing HTTP server');
+      process.exit(err ? 1 : 0);
+    });
+    server.closeIdleConnections?.();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('unhandledRejection', (reason) => {
+    logger.error({ err: reason }, 'Unhandled promise rejection');
+  });
+}
+
+main().catch((err) => {
+  console.error(
+    JSON.stringify({ level: 'fatal', msg: 'Failed to start', err: String(err?.stack || err) }),
+  );
+  process.exit(1);
+});
