@@ -1,148 +1,296 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-  <meta charset="UTF-8">
-  <title>Dashboard - Enterprise CRM</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-    }
-  </script>
-  <style type="text/tailwindcss">
-    @layer utilities {
-      .view-section {
-        @apply hidden;
-      }
-      .view-section.active {
-        @apply block;
-      }
-      .nav-links li {
-        @apply px-4 py-2 rounded-lg cursor-pointer text-slate-300 hover:bg-slate-700 transition-colors mb-1;
-      }
-      .nav-links li.active {
-        @apply bg-blue-600 text-white font-medium;
-      }
-    }
-  </style>
-</head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col md:flex-row transition-colors duration-200">
-  <aside class="w-full md:w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col min-h-screen shrink-0">
-    <div class="p-6">
-      <div class="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400 mb-8">CRM ERP</div>
-      <ul class="nav-links space-y-1">
-        <li class="active flex items-center" data-target="overview"><i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>Overview</li>
-        <li class="flex items-center" data-target="contacts"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Contacts</li>
-        <li class="flex items-center" data-target="deals"><i data-lucide="bar-chart" class="w-4 h-4 mr-2"></i>Pipeline</li>
-        <li class="flex items-center" data-target="audit" data-role-restricted="true" data-roles="admin"><i data-lucide="shield-check" class="w-4 h-4 mr-2"></i>Audit Logs</li>
-      </ul>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Dashboard - Enterprise CRM</title>
+    <script src="/js/theme.js"></script>
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sidebar-top">
+          <div class="brand">Enterprise CRM</div>
+        </div>
+        <nav aria-label="Main">
+          <ul class="nav">
+            <li>
+              <a href="#overview" data-view="overview">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="3" width="7" height="9" rx="1" />
+                  <rect x="14" y="3" width="7" height="5" rx="1" />
+                  <rect x="14" y="12" width="7" height="9" rx="1" />
+                  <rect x="3" y="16" width="7" height="5" rx="1" />
+                </svg>
+                Overview
+              </a>
+            </li>
+            <li>
+              <a href="#contacts" data-view="contacts">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Contacts
+              </a>
+            </li>
+            <li>
+              <a href="#deals" data-view="deals">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M3 3v18h18" />
+                  <path d="M7 16v-4M12 16V8M17 16v-7" />
+                </svg>
+                Pipeline
+              </a>
+            </li>
+            <li data-roles="admin" hidden>
+              <a href="#audit" data-view="audit">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+                Audit logs
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <div class="sidebar-actions">
+          <button type="button" class="btn" id="theme-toggle" aria-pressed="false">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            <span>Dark mode</span>
+          </button>
+          <button type="button" class="btn btn-danger" id="logout-btn">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
+            Log out
+          </button>
+        </div>
+      </aside>
+
+      <main class="main" id="main" tabindex="-1">
+        <div class="topbar">
+          <h1 id="view-title">Overview</h1>
+          <div class="user-badge" id="user-info">Signed in as <strong>...</strong></div>
+        </div>
+
+        <!-- Overview -->
+        <section id="view-overview" data-view-section="overview" aria-labelledby="view-title">
+          <div class="kpis" aria-live="polite">
+            <div class="panel kpi">
+              <div class="kpi-label">Contacts</div>
+              <div class="kpi-value" id="kpi-contacts">-</div>
+            </div>
+            <div class="panel kpi">
+              <div class="kpi-label">Open deals</div>
+              <div class="kpi-value" id="kpi-open-deals">-</div>
+            </div>
+            <div class="panel kpi">
+              <div class="kpi-label">Open pipeline value</div>
+              <div class="kpi-value" id="kpi-pipeline">-</div>
+            </div>
+            <div class="panel kpi">
+              <div class="kpi-label">Won revenue</div>
+              <div class="kpi-value positive" id="kpi-revenue">-</div>
+            </div>
+          </div>
+          <p class="state error" id="overview-error" role="alert" hidden></p>
+        </section>
+
+        <!-- Contacts -->
+        <section id="view-contacts" data-view-section="contacts" hidden>
+          <div class="panel section" data-write-only hidden>
+            <div class="panel-header"><h2>Add contact</h2></div>
+            <form class="panel-body stack" id="contact-form" novalidate>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="contact-name">Name</label>
+                  <input
+                    id="contact-name"
+                    name="name"
+                    required
+                    maxlength="200"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="field">
+                  <label for="contact-email">Email</label>
+                  <input
+                    id="contact-email"
+                    name="email"
+                    type="email"
+                    required
+                    maxlength="254"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="field">
+                  <label for="contact-phone">Phone <span class="hint">(optional)</span></label>
+                  <input
+                    id="contact-phone"
+                    name="phone"
+                    type="tel"
+                    maxlength="40"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="field">
+                  <label for="contact-tags">Tags <span class="hint">(optional)</span></label>
+                  <input id="contact-tags" name="tags" maxlength="500" autocomplete="off" />
+                </div>
+              </div>
+              <div class="alert" role="alert" data-form-error hidden></div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save contact</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel section">
+            <div class="panel-header"><h2>Contacts</h2></div>
+            <div class="table-wrap">
+              <table id="contacts-table">
+                <caption class="sr-only">
+                  Contacts
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Phone</th>
+                    <th scope="col">Created</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="state" id="contacts-state" aria-live="polite" hidden></p>
+          </div>
+        </section>
+
+        <!-- Pipeline -->
+        <section id="view-deals" data-view-section="deals" hidden>
+          <div class="panel section" data-write-only hidden>
+            <div class="panel-header"><h2>Add deal</h2></div>
+            <form class="panel-body stack" id="deal-form" novalidate>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="deal-title">Title</label>
+                  <input id="deal-title" name="title" required maxlength="200" autocomplete="off" />
+                </div>
+                <div class="field">
+                  <label for="deal-value">Value (USD)</label>
+                  <input
+                    id="deal-value"
+                    name="value"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputmode="decimal"
+                    required
+                  />
+                </div>
+                <div class="field">
+                  <label for="deal-contact">Contact</label>
+                  <select id="deal-contact" name="contact_id" required>
+                    <option value="">Select a contact</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="deal-stage">Stage</label>
+                  <select id="deal-stage" name="stage"></select>
+                </div>
+                <div class="field full">
+                  <label for="deal-notes"
+                    >Meeting notes
+                    <span class="hint">(optional, logged as an activity)</span></label
+                  >
+                  <textarea id="deal-notes" name="activity_notes" maxlength="5000"></textarea>
+                </div>
+              </div>
+              <div class="alert" role="alert" data-form-error hidden></div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save deal</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="section">
+            <p class="state" id="deals-state" aria-live="polite" hidden></p>
+            <div class="kanban" id="kanban-board" aria-label="Deal pipeline"></div>
+          </div>
+        </section>
+
+        <!-- Audit -->
+        <section id="view-audit" data-view-section="audit" hidden>
+          <div class="panel">
+            <div class="panel-header"><h2>Security audit log</h2></div>
+            <div class="table-wrap">
+              <table id="audit-table">
+                <caption class="sr-only">
+                  Latest audit log entries
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">User</th>
+                    <th scope="col">Action</th>
+                    <th scope="col">Entity</th>
+                    <th scope="col">ID</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="state" id="audit-state" aria-live="polite" hidden></p>
+          </div>
+        </section>
+      </main>
     </div>
-    <div class="mt-auto p-4 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-2">
-      <button id="theme-toggle" class="w-full px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors font-medium text-sm flex items-center justify-center"><i data-lucide="moon" class="w-4 h-4 mr-2"></i>Toggle Theme</button>
-      <button id="logout-btn" class="w-full px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg transition-colors font-medium text-sm flex items-center justify-center"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i>Logout</button>
-    </div>
-  </aside>
 
-  <main class="flex-1 p-8 overflow-y-auto">
-    <div class="flex justify-between items-center mb-8 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-      <h2 class="text-2xl font-bold">Dashboard</h2>
-      <div id="user-info" class="text-sm font-medium bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-full">Logged in as: <span class="text-blue-600 dark:text-blue-400">...</span></div>
-    </div>
-
-    <!-- Overview Section -->
-    <section id="overview" class="view-section active">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <div class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Total Contacts</div>
-          <div class="text-3xl font-bold" id="kpi-contacts">0</div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <div class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Active Deals</div>
-          <div class="text-3xl font-bold" id="kpi-deals">0</div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <div class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Won Revenue</div>
-          <div class="text-3xl font-bold text-green-600 dark:text-green-400" id="kpi-revenue">$0</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Contacts Section -->
-    <section id="contacts" class="view-section">
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div class="p-6 border-b border-slate-200 dark:border-slate-700">
-          <h3 class="text-xl font-bold">Contacts</h3>
-        </div>
-        <div class="overflow-x-auto">
-          <table id="contacts-table" class="w-full text-left text-sm whitespace-nowrap">
-            <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
-              <tr>
-                <th class="px-6 py-4 font-medium">Name</th>
-                <th class="px-6 py-4 font-medium">Email</th>
-                <th class="px-6 py-4 font-medium">Phone</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- Deals Section -->
-    <section id="deals" class="view-section">
-      <h3 class="text-xl font-bold mb-6">Pipeline</h3>
-      <div class="flex gap-4 overflow-x-auto pb-4" id="kanban-board">
-        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Lead">
-          <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center justify-between">Lead</h3>
-          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
-        </div>
-        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Qualified">
-          <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-4">Qualified</h3>
-          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
-        </div>
-        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Proposal">
-          <h3 class="font-semibold text-slate-700 dark:text-slate-300 mb-4">Proposal</h3>
-          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
-        </div>
-        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Won">
-          <h3 class="font-semibold text-green-600 dark:text-green-400 mb-4">Won</h3>
-          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
-        </div>
-        <div class="kanban-col w-72 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4" data-stage="Lost">
-          <h3 class="font-semibold text-red-600 dark:text-red-400 mb-4">Lost</h3>
-          <div class="kanban-items flex flex-col gap-3 min-h-[100px]"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Audit Logs Section -->
-    <section id="audit" class="view-section">
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div class="p-6 border-b border-slate-200 dark:border-slate-700">
-          <h3 class="text-xl font-bold">Security Audit Logs</h3>
-        </div>
-        <div class="overflow-x-auto">
-          <table id="audit-table" class="w-full text-left text-sm whitespace-nowrap">
-            <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
-              <tr>
-                <th class="px-6 py-4 font-medium">Date</th>
-                <th class="px-6 py-4 font-medium">User</th>
-                <th class="px-6 py-4 font-medium">Action</th>
-                <th class="px-6 py-4 font-medium">Entity</th>
-                <th class="px-6 py-4 font-medium">ID</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-700 font-mono text-xs"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  </main>
-  
-  <div id="toast-container" class="fixed bottom-4 right-4 flex flex-col gap-2 z-[9999]"></div>
-
-  <script src="/js/app.js"></script>
-  <script>lucide.createIcons();</script>
-</body>
+    <div class="toasts" id="toast-container" role="status" aria-live="polite"></div>
+    <script src="/js/app.js"></script>
+  </body>
 </html>
